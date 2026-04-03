@@ -1,10 +1,37 @@
-.anchor
-.DS_Store
+# ── Solana / Anchor ──────────────────────────────────────────────────────────
+.anchor/
 target/
+test-ledger/
+
+# ── Node ─────────────────────────────────────────────────────────────────────
 node_modules/
-dist/
-build/
-.env
 app/node_modules/
+
+# ── Next.js ──────────────────────────────────────────────────────────────────
 app/.next/
 app/out/
+
+# ── Playwright ───────────────────────────────────────────────────────────────
+app/test-results/
+app/playwright-report/
+app/.playwright/
+
+# ── Environment / secrets ────────────────────────────────────────────────────
+.env
+.env.local
+.env*.local
+app/.env
+app/.env.local
+app/.env*.local
+
+# ── OS ───────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── IDL (gerado pelo anchor build — não versionar) ───────────────────────────
+app/lib/escrow_freelancer_offers.json
+
+# ── Misc ─────────────────────────────────────────────────────────────────────
+dist/
+build/
+*.log

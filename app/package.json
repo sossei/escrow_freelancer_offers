@@ -2,12 +2,16 @@
   "name": "escrow-freelancer-offers-app",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "copy-idl": "cp ../target/idl/escrow_freelancer_offers.json ./lib/escrow_freelancer_offers.json"
+    "copy-idl": "cp ../target/idl/escrow_freelancer_offers.json ./lib/escrow_freelancer_offers.json",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "gif": "node scripts/video-to-gif.mjs"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.32.1",
@@ -30,13 +34,5 @@
     "typescript": "^5",
     "webpack": "^5.105.4"
   },
-  "description": "",
-  "main": "index.js",
-  "directories": {
-    "lib": "lib"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs"
+  "license": "ISC"
 }
