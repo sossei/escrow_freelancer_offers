@@ -12,7 +12,9 @@ import {
 import type { JobOffer, JobProposal } from "../lib/types";
 import { PublicKey } from "@solana/web3.js";
 
-export function FreelancerView() {
+type TxInfo = { feeLamports: number; note: string };
+
+export function FreelancerView({ onTxDone }: { onTxDone?: () => void }) {
   const { publicKey } = useWallet();
   const escrow = useEscrowProgram();
 
@@ -23,6 +25,7 @@ export function FreelancerView() {
   >({});
   const [submitting, setSubmitting] = useState<string | null>(null); // offer id
   const [error, setError] = useState("");
+  const [lastTx, setLastTx] = useState<TxInfo | null>(null);
 
   const walletKey = publicKey?.toBase58() ?? "";
 
@@ -63,10 +66,13 @@ export function FreelancerView() {
     setSubmitting(offer.id);
 
     try {
-      await escrow.offerProposal({
+      const { feeLamports } = await escrow.offerProposal({
         jobOfferPda: offer.pdaAddress,
         message,
       });
+
+      setLastTx({ feeLamports, note: "Created Proposal account (rent deposited on-chain)" });
+      onTxDone?.();
 
       const jobOfferKey = new PublicKey(offer.pdaAddress);
       const proposalPda = deriveProposalPda(jobOfferKey, publicKey);
@@ -100,6 +106,34 @@ export function FreelancerView() {
 
   return (
     <div>
+      {/* ── Last tx cost banner ── */}
+      {lastTx && (
+        <div style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          background: "#0f2318",
+          border: "1px solid var(--success)",
+          borderRadius: 8,
+          padding: "10px 16px",
+          marginBottom: 16,
+          fontSize: 13,
+        }}>
+          <span style={{ color: "var(--success)" }}>
+            <strong>Tx confirmed</strong> &nbsp;|&nbsp; Network fee:{" "}
+            <strong>{(lastTx.feeLamports / LAMPORTS_PER_SOL).toFixed(6)} SOL</strong>
+            {" "}({lastTx.feeLamports.toLocaleString()} lamports)
+            &nbsp;&mdash;&nbsp;{lastTx.note}
+          </span>
+          <button
+            onClick={() => setLastTx(null)}
+            style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: 16, lineHeight: 1 }}
+          >
+            ×
+          </button>
+        </div>
+      )}
+
       {/* ── Open jobs ── */}
       <p className="section-title">Available Jobs</p>
 

@@ -118,7 +118,7 @@ export function EscrowApp() {
       </div>
 
       {/* Active view */}
-      {view === "client" ? <ClientView /> : <FreelancerView />}
+      {view === "client" ? <ClientView onTxDone={fetchBalance} /> : <FreelancerView onTxDone={fetchBalance} />}
     </div>
   );
 }

@@ -57,6 +57,10 @@ export function deriveVaultPda(jobOfferPda: PublicKey): PublicKey {
   return pda;
 }
 
+// ─── Tx result with fee ───────────────────────────────────────────────────────
+
+export type TxResult = { signature: string; feeLamports: number };
+
 // ─── Hook ────────────────────────────────────────────────────────────────────
 
 export function useEscrowProgram() {
@@ -75,13 +79,26 @@ export function useEscrowProgram() {
     return new Program(idl as Idl, provider);
   }, [connection, wallet]);
 
+  // Fetches the actual network fee paid for a confirmed transaction
+  async function fetchFee(sig: string): Promise<number> {
+    try {
+      const details = await connection.getTransaction(sig, {
+        commitment: "confirmed",
+        maxSupportedTransactionVersion: 0,
+      });
+      return details?.meta?.fee ?? 0;
+    } catch {
+      return 0;
+    }
+  }
+
   // ── create_offer ──────────────────────────────────────────────────────────
   async function createOffer(params: {
     jobId: bigint;
     title: string;
     description: string;
     amountSol: number; // in SOL (will be converted to lamports)
-  }): Promise<string> {
+  }): Promise<TxResult> {
     if (!program || !wallet.publicKey) throw new Error("Wallet not connected");
 
     const jobOfferPda = deriveJobOfferPda(wallet.publicKey, params.jobId);
@@ -91,7 +108,7 @@ export function useEscrowProgram() {
     const jobIdBN = new BN(params.jobId.toString());
     const amountBN = new BN(amountLamports);
 
-    const tx = await program.methods
+    const signature = await program.methods
       .createOffer(jobIdBN, params.title, params.description, amountBN)
       .accounts({
         jobOffer: jobOfferPda,
@@ -100,20 +117,20 @@ export function useEscrowProgram() {
       })
       .rpc();
 
-    return tx;
+    return { signature, feeLamports: await fetchFee(signature) };
   }
 
   // ── offer_proposal ────────────────────────────────────────────────────────
   async function offerProposal(params: {
     jobOfferPda: string;
     message: string;
-  }): Promise<string> {
+  }): Promise<TxResult> {
     if (!program || !wallet.publicKey) throw new Error("Wallet not connected");
 
     const jobOfferKey = new PublicKey(params.jobOfferPda);
     const proposalPda = deriveProposalPda(jobOfferKey, wallet.publicKey);
 
-    const tx = await program.methods
+    const signature = await program.methods
       .offerProposal(params.message)
       .accounts({
         jobOffer: jobOfferKey,
@@ -123,14 +140,14 @@ export function useEscrowProgram() {
       })
       .rpc();
 
-    return tx;
+    return { signature, feeLamports: await fetchFee(signature) };
   }
 
   // ── accept_proposal ───────────────────────────────────────────────────────
   async function acceptProposal(params: {
     jobOfferPda: string;
     freelancerPubkey: string;
-  }): Promise<string> {
+  }): Promise<TxResult> {
     if (!program || !wallet.publicKey) throw new Error("Wallet not connected");
 
     const jobOfferKey = new PublicKey(params.jobOfferPda);
@@ -138,7 +155,7 @@ export function useEscrowProgram() {
     const proposalPda = deriveProposalPda(jobOfferKey, freelancerKey);
     const vaultPda = deriveVaultPda(jobOfferKey);
 
-    const tx = await program.methods
+    const signature = await program.methods
       .acceptProposal()
       .accounts({
         jobOffer: jobOfferKey,
@@ -149,21 +166,21 @@ export function useEscrowProgram() {
       })
       .rpc();
 
-    return tx;
+    return { signature, feeLamports: await fetchFee(signature) };
   }
 
   // ── complete_proposal ─────────────────────────────────────────────────────
   async function completeProposal(params: {
     jobOfferPda: string;
     freelancerPubkey: string;
-  }): Promise<string> {
+  }): Promise<TxResult> {
     if (!program || !wallet.publicKey) throw new Error("Wallet not connected");
 
     const jobOfferKey = new PublicKey(params.jobOfferPda);
     const freelancerKey = new PublicKey(params.freelancerPubkey);
     const vaultPda = deriveVaultPda(jobOfferKey);
 
-    const tx = await program.methods
+    const signature = await program.methods
       .completeProposal()
       .accounts({
         jobOffer: jobOfferKey,
@@ -174,17 +191,17 @@ export function useEscrowProgram() {
       })
       .rpc();
 
-    return tx;
+    return { signature, feeLamports: await fetchFee(signature) };
   }
 
   // ── cancel_job ────────────────────────────────────────────────────────────
-  async function cancelJob(params: { jobOfferPda: string }): Promise<string> {
+  async function cancelJob(params: { jobOfferPda: string }): Promise<TxResult> {
     if (!program || !wallet.publicKey) throw new Error("Wallet not connected");
 
     const jobOfferKey = new PublicKey(params.jobOfferPda);
     const vaultPda = deriveVaultPda(jobOfferKey);
 
-    const tx = await program.methods
+    const signature = await program.methods
       .cancelJob()
       .accounts({
         jobOffer: jobOfferKey,
@@ -194,21 +211,21 @@ export function useEscrowProgram() {
       })
       .rpc();
 
-    return tx;
+    return { signature, feeLamports: await fetchFee(signature) };
   }
 
   // ── decline_proposal ──────────────────────────────────────────────────────
   async function declineProposal(params: {
     jobOfferPda: string;
     freelancerPubkey: string;
-  }): Promise<string> {
+  }): Promise<TxResult> {
     if (!program || !wallet.publicKey) throw new Error("Wallet not connected");
 
     const jobOfferKey = new PublicKey(params.jobOfferPda);
     const freelancerKey = new PublicKey(params.freelancerPubkey);
     const proposalPda = deriveProposalPda(jobOfferKey, freelancerKey);
 
-    const tx = await program.methods
+    const signature = await program.methods
       .declineProposal()
       .accounts({
         jobOffer: jobOfferKey,
@@ -217,7 +234,7 @@ export function useEscrowProgram() {
       })
       .rpc();
 
-    return tx;
+    return { signature, feeLamports: await fetchFee(signature) };
   }
 
   return {

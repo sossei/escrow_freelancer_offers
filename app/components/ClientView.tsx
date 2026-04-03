@@ -13,7 +13,9 @@ import {
 } from "../lib/mockDb";
 import type { JobOffer, JobProposal } from "../lib/types";
 
-export function ClientView() {
+type TxInfo = { feeLamports: number; note: string };
+
+export function ClientView({ onTxDone }: { onTxDone?: () => void }) {
   const { publicKey } = useWallet();
   const escrow = useEscrowProgram();
 
@@ -29,6 +31,7 @@ export function ClientView() {
   const [creating, setCreating] = useState(false);
   const [txLoading, setTxLoading] = useState<string | null>(null); // loading per offer id
   const [error, setError] = useState("");
+  const [lastTx, setLastTx] = useState<TxInfo | null>(null);
 
   const walletKey = publicKey?.toBase58() ?? "";
 
@@ -67,12 +70,15 @@ export function ClientView() {
       const jobOfferPda = deriveJobOfferPda(publicKey, jobId);
 
       // Call on-chain
-      await escrow.createOffer({
+      const { feeLamports } = await escrow.createOffer({
         jobId,
         title: title.trim(),
         description: description.trim(),
         amountSol: sol,
       });
+
+      setLastTx({ feeLamports, note: "Created JobOffer account (rent deposited on-chain)" });
+      onTxDone?.();
 
       // Persist locally
       const newOffer: JobOffer = {
@@ -104,10 +110,12 @@ export function ClientView() {
     setTxLoading(`accept-${proposal.id}`);
     setError("");
     try {
-      await escrow.acceptProposal({
+      const { feeLamports } = await escrow.acceptProposal({
         jobOfferPda: offer.pdaAddress,
         freelancerPubkey: proposal.freelancer,
       });
+      setLastTx({ feeLamports, note: "Created Vault account + locked SOL in escrow (rent deposited)" });
+      onTxDone?.();
       updateOfferStatus(offer.id, "accepted", proposal.freelancer);
       updateProposalStatus(proposal.id, "accepted");
       reload();
@@ -123,10 +131,12 @@ export function ClientView() {
     setTxLoading(`decline-${proposal.id}`);
     setError("");
     try {
-      await escrow.declineProposal({
+      const { feeLamports } = await escrow.declineProposal({
         jobOfferPda: offer.pdaAddress,
         freelancerPubkey: proposal.freelancer,
       });
+      setLastTx({ feeLamports, note: "Proposal account closed (rent returned to freelancer)" });
+      onTxDone?.();
       updateProposalStatus(proposal.id, "declined");
       reload();
     } catch (err: unknown) {
@@ -142,10 +152,12 @@ export function ClientView() {
     setTxLoading(`pay-${offer.id}`);
     setError("");
     try {
-      await escrow.completeProposal({
+      const { feeLamports } = await escrow.completeProposal({
         jobOfferPda: offer.pdaAddress,
         freelancerPubkey: offer.acceptedFreelancer,
       });
+      setLastTx({ feeLamports, note: "Vault closed — SOL sent to freelancer (vault rent reclaimed)" });
+      onTxDone?.();
       updateOfferStatus(offer.id, "completed");
       reload();
     } catch (err: unknown) {
@@ -160,7 +172,9 @@ export function ClientView() {
     setTxLoading(`cancel-${offer.id}`);
     setError("");
     try {
-      await escrow.cancelJob({ jobOfferPda: offer.pdaAddress });
+      const { feeLamports } = await escrow.cancelJob({ jobOfferPda: offer.pdaAddress });
+      setLastTx({ feeLamports, note: "Vault closed — SOL returned to you (vault rent reclaimed)" });
+      onTxDone?.();
       updateOfferStatus(offer.id, "cancelled");
       reload();
     } catch (err: unknown) {
@@ -172,6 +186,34 @@ export function ClientView() {
 
   return (
     <div>
+      {/* ── Last tx cost banner ── */}
+      {lastTx && (
+        <div style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          background: "#0f2318",
+          border: "1px solid var(--success)",
+          borderRadius: 8,
+          padding: "10px 16px",
+          marginBottom: 16,
+          fontSize: 13,
+        }}>
+          <span style={{ color: "var(--success)" }}>
+            <strong>Tx confirmed</strong> &nbsp;|&nbsp; Network fee:{" "}
+            <strong>{(lastTx.feeLamports / LAMPORTS_PER_SOL).toFixed(6)} SOL</strong>
+            {" "}({lastTx.feeLamports.toLocaleString()} lamports)
+            &nbsp;&mdash;&nbsp;{lastTx.note}
+          </span>
+          <button
+            onClick={() => setLastTx(null)}
+            style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: 16, lineHeight: 1 }}
+          >
+            ×
+          </button>
+        </div>
+      )}
+
       {/* ── Create offer form ── */}
       <div className="card">
         <p className="section-title">Post a Job</p>
