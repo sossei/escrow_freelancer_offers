@@ -6,7 +6,7 @@ resolution = true
 skip-lint = false
 
 [programs.devnet]
-escrow_freelancer_offers = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
+escrow_freelancer_offers = "2v5LKTZViJQ7hQNz7YoARjyaDQoRZKDzX1VtX8Evdfxx"
 
 [programs.localnet]
 escrow_freelancer_offers = "2v5LKTZViJQ7hQNz7YoARjyaDQoRZKDzX1VtX8Evdfxx"
@@ -15,7 +15,7 @@ escrow_freelancer_offers = "2v5LKTZViJQ7hQNz7YoARjyaDQoRZKDzX1VtX8Evdfxx"
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "localnet"
+cluster = "devnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
