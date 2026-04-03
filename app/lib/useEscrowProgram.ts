@@ -1,10 +1,12 @@
+"use client";
+
 /**
  * Hook that returns helpers to call on-chain escrow instructions.
  * The program IDL is loaded from lib/escrow_freelancer_offers.json.
  * Run `npm run copy-idl` (from /app) after each `anchor build` to refresh it.
  */
 
-import { useMemo } from "react";
+import { useMemo, useEffect, useState } from "react";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { Program, AnchorProvider, setProvider, Idl, BN } from "@coral-xyz/anchor";
 import { PublicKey, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
@@ -248,4 +250,37 @@ export function useEscrowProgram() {
     cancelJob,
     declineProposal,
   };
+}
+
+// ─── Fee estimates hook ───────────────────────────────────────────────────────
+// Sizes derived directly from the Rust program constants:
+//   JobOffer::SPACE    = 699 bytes
+//   JobProposal::SPACE = 378 bytes
+//   Vault              =   0 bytes (plain lamport holder, no data)
+const JOB_OFFER_SPACE = 699;
+const PROPOSAL_SPACE = 378;
+const ESTIMATED_NETWORK_FEE = 5000; // lamports (~typical for a simple tx)
+
+export type FeeEstimates = {
+  networkFee: number;      // lamports
+  jobOfferRent: number;    // lamports — paid when posting a job
+  proposalRent: number;    // lamports — paid when submitting a proposal
+};
+
+export function useFeeEstimates(): FeeEstimates | null {
+  const { connection } = useConnection();
+  const [estimates, setEstimates] = useState<FeeEstimates | null>(null);
+
+  useEffect(() => {
+    async function load() {
+      const [jobOfferRent, proposalRent] = await Promise.all([
+        connection.getMinimumBalanceForRentExemption(JOB_OFFER_SPACE),
+        connection.getMinimumBalanceForRentExemption(PROPOSAL_SPACE),
+      ]);
+      setEstimates({ networkFee: ESTIMATED_NETWORK_FEE, jobOfferRent, proposalRent });
+    }
+    load().catch(console.error);
+  }, [connection]);
+
+  return estimates;
 }

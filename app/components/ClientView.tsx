@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
-import { useEscrowProgram, deriveJobOfferPda } from "../lib/useEscrowProgram";
+import { useEscrowProgram, useFeeEstimates, deriveJobOfferPda } from "../lib/useEscrowProgram";
 import {
   getOffers,
   saveOffer,
@@ -18,6 +18,7 @@ type TxInfo = { feeLamports: number; note: string };
 export function ClientView({ onTxDone }: { onTxDone?: () => void }) {
   const { publicKey } = useWallet();
   const escrow = useEscrowProgram();
+  const feeEstimates = useFeeEstimates();
 
   const [offers, setOffers] = useState<JobOffer[]>([]);
   const [proposalsMap, setProposalsMap] = useState<
@@ -255,6 +256,39 @@ export function ClientView({ onTxDone }: { onTxDone?: () => void }) {
               {error}
             </p>
           )}
+
+          {/* Cost breakdown for posting a job */}
+          {feeEstimates && (
+            <div style={{
+              background: "#111c2e",
+              border: "1px solid #2a3a55",
+              borderRadius: 8,
+              padding: "10px 14px",
+              marginBottom: 12,
+              fontSize: 12,
+              color: "var(--text-muted)",
+            }}>
+              <strong style={{ color: "var(--text)", display: "block", marginBottom: 6 }}>
+                Custo estimado para publicar este job
+              </strong>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span>Taxa de rede</span>
+                <span>~{(feeEstimates.networkFee / LAMPORTS_PER_SOL).toFixed(6)} SOL</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span>Rent (conta JobOffer) <span title="Devolvido ao cancelar o job" style={{ cursor: "help" }}>↩</span></span>
+                <span>~{(feeEstimates.jobOfferRent / LAMPORTS_PER_SOL).toFixed(6)} SOL</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px solid #2a3a55", marginTop: 6, paddingTop: 6, fontWeight: 600, color: "var(--text)" }}>
+                <span>Total desembolsado</span>
+                <span>~{((feeEstimates.networkFee + feeEstimates.jobOfferRent) / LAMPORTS_PER_SOL).toFixed(6)} SOL</span>
+              </div>
+              <p style={{ margin: "6px 0 0", fontSize: 11, fontStyle: "italic" }}>
+                ↩ Rent é recuperado quando o job for cancelado ou concluído.
+              </p>
+            </div>
+          )}
+
           <button className="btn btn-primary" type="submit" disabled={creating}>
             {creating ? "Posting…" : "Post Job"}
           </button>
@@ -375,24 +409,56 @@ export function ClientView({ onTxDone }: { onTxDone?: () => void }) {
                         {p.status}
                       </span>
                       {p.status === "pending" && offer.status === "open" && (
-                        <div className="btn-row" style={{ margin: 0 }}>
-                          <button
-                            className="btn btn-success"
-                            style={{ padding: "6px 14px", fontSize: 12 }}
-                            onClick={() => handleAccept(offer, p)}
-                            disabled={!!txLoading}
-                          >
-                            {txLoading === `accept-${p.id}` ? "…" : "Accept"}
-                          </button>
-                          <button
-                            className="btn btn-danger"
-                            style={{ padding: "6px 14px", fontSize: 12 }}
-                            onClick={() => handleDecline(offer, p)}
-                            disabled={!!txLoading}
-                          >
-                            {txLoading === `decline-${p.id}` ? "…" : "Decline"}
-                          </button>
-                        </div>
+                        <>
+                          {feeEstimates && (
+                            <div style={{
+                              background: "#111c2e",
+                              border: "1px solid #2a3a55",
+                              borderRadius: 8,
+                              padding: "8px 12px",
+                              margin: "6px 0",
+                              fontSize: 11,
+                              color: "var(--text-muted)",
+                            }}>
+                              <strong style={{ color: "var(--text)", display: "block", marginBottom: 4 }}>
+                                Custo ao aceitar esta proposta
+                              </strong>
+                              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                                <span>Taxa de rede</span>
+                                <span>~{(feeEstimates.networkFee / LAMPORTS_PER_SOL).toFixed(6)} SOL</span>
+                              </div>
+                              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                                <span>Valor bloqueado (escrow) ↩</span>
+                                <span>{(offer.amount / LAMPORTS_PER_SOL).toFixed(3)} SOL</span>
+                              </div>
+                              <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px solid #2a3a55", marginTop: 4, paddingTop: 4, fontWeight: 600, color: "var(--text)" }}>
+                                <span>Total desembolsado</span>
+                                <span>~{((feeEstimates.networkFee + offer.amount) / LAMPORTS_PER_SOL).toFixed(6)} SOL</span>
+                              </div>
+                              <p style={{ margin: "4px 0 0", fontSize: 10, fontStyle: "italic" }}>
+                                ↩ SOL bloqueado no vault — liberado ao pagar ou cancelar.
+                              </p>
+                            </div>
+                          )}
+                          <div className="btn-row" style={{ margin: 0 }}>
+                            <button
+                              className="btn btn-success"
+                              style={{ padding: "6px 14px", fontSize: 12 }}
+                              onClick={() => handleAccept(offer, p)}
+                              disabled={!!txLoading}
+                            >
+                              {txLoading === `accept-${p.id}` ? "…" : "Accept"}
+                            </button>
+                            <button
+                              className="btn btn-danger"
+                              style={{ padding: "6px 14px", fontSize: 12 }}
+                              onClick={() => handleDecline(offer, p)}
+                              disabled={!!txLoading}
+                            >
+                              {txLoading === `decline-${p.id}` ? "…" : "Decline"}
+                            </button>
+                          </div>
+                        </>
                       )}
                     </div>
                   </div>

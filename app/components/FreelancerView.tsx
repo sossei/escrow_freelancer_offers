@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
-import { useEscrowProgram, deriveProposalPda } from "../lib/useEscrowProgram";
+import { useEscrowProgram, useFeeEstimates, deriveProposalPda } from "../lib/useEscrowProgram";
 import {
   getOffers,
   saveProposal,
@@ -17,6 +17,7 @@ type TxInfo = { feeLamports: number; note: string };
 export function FreelancerView({ onTxDone }: { onTxDone?: () => void }) {
   const { publicKey } = useWallet();
   const escrow = useEscrowProgram();
+  const feeEstimates = useFeeEstimates();
 
   const [openOffers, setOpenOffers] = useState<JobOffer[]>([]);
   const [myProposals, setMyProposals] = useState<JobProposal[]>([]);
@@ -205,6 +206,39 @@ export function FreelancerView({ onTxDone }: { onTxDone?: () => void }) {
                     {error}
                   </p>
                 )}
+
+                {/* Cost breakdown for submitting a proposal */}
+                {feeEstimates && (
+                  <div style={{
+                    background: "#111c2e",
+                    border: "1px solid #2a3a55",
+                    borderRadius: 8,
+                    padding: "10px 14px",
+                    marginBottom: 10,
+                    fontSize: 12,
+                    color: "var(--text-muted)",
+                  }}>
+                    <strong style={{ color: "var(--text)", display: "block", marginBottom: 6 }}>
+                      Custo ao submeter esta proposta
+                    </strong>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span>Taxa de rede</span>
+                      <span>~{(feeEstimates.networkFee / LAMPORTS_PER_SOL).toFixed(6)} SOL</span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span>Rent (conta Proposal) ↩</span>
+                      <span>~{(feeEstimates.proposalRent / LAMPORTS_PER_SOL).toFixed(6)} SOL</span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px solid #2a3a55", marginTop: 6, paddingTop: 6, fontWeight: 600, color: "var(--text)" }}>
+                      <span>Total desembolsado</span>
+                      <span>~{((feeEstimates.networkFee + feeEstimates.proposalRent) / LAMPORTS_PER_SOL).toFixed(6)} SOL</span>
+                    </div>
+                    <p style={{ margin: "6px 0 0", fontSize: 11, fontStyle: "italic" }}>
+                      ↩ Rent é recuperado quando a proposta for aceita ou recusada.
+                    </p>
+                  </div>
+                )}
+
                 <button
                   className="btn btn-primary"
                   onClick={() => handlePropose(offer)}
