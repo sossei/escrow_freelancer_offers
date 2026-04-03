@@ -1,43 +1,45 @@
 # Escrow Freelancer Offers
 
-A Solana program built with Anchor that implements a decentralized escrow between clients and freelancers using native SOL.
+Programa Solana construído com Anchor que implementa um escrow descentralizado entre clientes e freelancers usando SOL nativo.
 
 ![demo](assets/demo.gif)
 
-## What it does
+---
 
-A **client** posts a job with a SOL budget. A **freelancer** submits a proposal. If the client accepts, the SOL is locked on-chain in a vault. After the work is done, the client either pays the freelancer (releases the SOL) or cancels (gets the SOL back).
+## O que faz
+
+Um **cliente** posta um job com um orçamento em SOL. Um **freelancer** envia uma proposta. Se o cliente aceitar, o SOL é bloqueado on-chain em um vault. Após o trabalho ser entregue, o cliente paga o freelancer (libera o SOL) ou cancela (recebe o SOL de volta).
 
 ```
-Client posts job ──► Freelancer proposes ──► Client accepts (SOL locked)
-                                                     │
-                                          ┌──────────┴──────────┐
-                                     Pay Freelancer         Cancel Job
-                                    (SOL released)        (SOL returned)
+Cliente posta job ──► Freelancer propõe ──► Cliente aceita (SOL bloqueado)
+                                                    │
+                                         ┌──────────┴──────────┐
+                                    Pagar Freelancer       Cancelar Job
+                                    (SOL liberado)        (SOL devolvido)
 ```
 
 ---
 
-## Project structure
+## Estrutura do projeto
 
 ```
 escrow-challenge/
-├── programs/escrow/src/lib.rs   ← Anchor program (Rust)
-├── tests/escrow.ts              ← Integration tests (TypeScript)
-├── Anchor.toml                  ← Anchor config (cluster, wallet, program ID)
-├── Cargo.toml                   ← Rust workspace
-├── package.json                 ← Test runner dependencies
-└── app/                         ← Next.js 16 frontend
+├── programs/escrow/src/lib.rs   ← Programa Anchor (Rust)
+├── tests/escrow.ts              ← Testes de integração (TypeScript)
+├── Anchor.toml                  ← Configuração do Anchor (cluster, wallet, program ID)
+├── Cargo.toml                   ← Workspace Rust
+├── package.json                 ← Dependências do test runner
+└── app/                         ← Frontend Next.js 16
     ├── .env.local               ← RPC URL + program ID (gitignored — criar manualmente)
     ├── components/
-    │   ├── EscrowApp.tsx        ← View switcher + saldo + botão airdrop
+    │   ├── EscrowApp.tsx        ← Alternador de visão + saldo + botão airdrop
     │   ├── ClientView.tsx       ← Postar jobs, gerenciar propostas, pagar/cancelar
     │   └── FreelancerView.tsx   ← Navegar jobs, enviar propostas, acompanhar status
     ├── e2e/
     │   └── tutorial.spec.ts     ← Testes Playwright (grava vídeo)
     ├── scripts/
     │   └── video-to-gif.mjs     ← Converte vídeo do Playwright em GIF
-    ├── playwright.config.ts     ← Config do Playwright (vídeo on, 1280×720)
+    ├── playwright.config.ts     ← Configuração do Playwright (vídeo ativado, 1280×720)
     └── lib/
         ├── useEscrowProgram.ts  ← Hooks que chamam o programa on-chain
         ├── mockDb.ts            ← Banco local em localStorage
@@ -56,7 +58,7 @@ Mesmo ID para localnet e devnet (gerado pelo keypair em `target/deploy/`).
 
 ---
 
-## On-chain accounts
+## Contas on-chain
 
 O programa usa três tipos de contas, todas derivadas como PDAs (Program Derived Addresses — endereços determinísticos sem chave privada).
 
@@ -65,16 +67,16 @@ Armazena um job postado pelo cliente.
 
 | Campo | Tipo | Descrição |
 |---|---|---|
-| `client` | Pubkey | Wallet que criou o job |
+| `client` | Pubkey | Carteira que criou o job |
 | `job_id` | u64 | ID único gerado pelo cliente (seed do PDA) |
-| `title` | String | Título do job (max 100 chars) |
-| `description` | String | Descrição (max 500 chars) |
+| `title` | String | Título do job (máx. 100 chars) |
+| `description` | String | Descrição (máx. 500 chars) |
 | `amount` | u64 | Pagamento em lamports (1 SOL = 1.000.000.000 lamports) |
 | `status` | enum | `Open` → `Accepted` → `Completed` ou `Cancelled` |
 | `freelancer` | Option\<Pubkey\> | Definido quando uma proposta é aceita |
 | `bump` | u8 | Bump canônico do PDA |
 
-PDA seeds: `["job_offer", client_pubkey, job_id_as_8_bytes]`
+Seeds do PDA: `["job_offer", client_pubkey, job_id_em_8_bytes]`
 
 ### JobProposal
 Armazena a proposta de um freelancer para um job.
@@ -82,23 +84,23 @@ Armazena a proposta de um freelancer para um job.
 | Campo | Tipo | Descrição |
 |---|---|---|
 | `job_offer` | Pubkey | Job ao qual pertence essa proposta |
-| `freelancer` | Pubkey | Wallet que enviou a proposta |
-| `message` | String | Mensagem da proposta (max 300 chars) |
+| `freelancer` | Pubkey | Carteira que enviou a proposta |
+| `message` | String | Mensagem da proposta (máx. 300 chars) |
 | `status` | enum | `Pending` → `Accepted` ou `Declined` |
 | `bump` | u8 | Bump canônico do PDA |
 
-PDA seeds: `["proposal", job_offer_pubkey, freelancer_pubkey]`
+Seeds do PDA: `["proposal", job_offer_pubkey, freelancer_pubkey]`
 
 > Uma proposta por par (freelancer, job) — garantido pela unicidade do PDA.
 
 ### Vault (PDA anônimo)
 Guarda o SOL bloqueado. Sem dados, apenas lamports.
 
-PDA seeds: `["vault", job_offer_pubkey]`
+Seeds do PDA: `["vault", job_offer_pubkey]`
 
 ---
 
-## Program instructions
+## Instruções do programa
 
 ### `create_offer`
 **Quem chama:** Cliente
@@ -198,8 +200,8 @@ Contas:
 ```
 
 **Efeito:**
-- Se `Open`: apenas marca como Cancelled (sem SOL a devolver)
-- Se `Accepted`: transfere `amount` lamports de `vault` → `client`, depois marca Cancelled
+- Se `Open`: apenas marca como Cancelado (sem SOL a devolver)
+- Se `Accepted`: transfere `amount` lamports de `vault` → `client`, depois marca Cancelado
 
 ---
 
@@ -291,14 +293,14 @@ Esse comando:
 Output esperado:
 ```
 escrow_freelancer_offers
-  ✔ Client can create a job offer
-  ✔ Freelancer can submit a proposal
-  ✔ Client cannot propose for their own job
-  ✔ Client can accept a proposal (SOL locked in vault)
-  ✔ Freelancer cannot call complete_proposal (only client can)
-  ✔ Client can pay the freelancer (complete proposal)
-  ✔ Client can cancel a job after accepting (SOL returned)
-  ✔ Client can decline a proposal
+  ✔ Cliente consegue criar uma oferta de job
+  ✔ Freelancer consegue enviar uma proposta
+  ✔ Cliente não pode enviar proposta no próprio job
+  ✔ Cliente aceita proposta (SOL bloqueado no vault)
+  ✔ Freelancer não pode chamar complete_proposal (só o cliente pode)
+  ✔ Cliente paga o freelancer (completa a proposta)
+  ✔ Cliente cancela job após aceitar (SOL devolvido)
+  ✔ Cliente recusa uma proposta
 
   8 passing
 ```
@@ -410,7 +412,7 @@ solana balance --url devnet
 ## Deploy no devnet (passo a passo)
 
 ```bash
-# 1. Garantir que tem SOL (via faucet acima)
+# 1. Confirmar que tem SOL (via faucet acima)
 solana balance --url devnet
 
 # 2. Build
@@ -463,27 +465,27 @@ npm run gif -- video.webm demo.gif 12 800
 
 ---
 
-## Flow do frontend
+## Fluxo do frontend
 
-### View "I need someone to do" (Cliente)
+### Visão "Preciso de alguém para fazer" (Cliente)
 
 1. Conectar carteira (Phantom)
 2. **Postar um Job** — título, descrição, valor em SOL → chama `create_offer`
 3. **Ver propostas** dos freelancers em cada job
 4. **Aceitar** uma proposta → chama `accept_proposal` (SOL bloqueado)
-5. Após o trabalho feito:
-   - **Pay Freelancer** → chama `complete_proposal` (SOL liberado)
-   - **Cancel Job** → chama `cancel_job` (SOL devolvido)
+5. Após o trabalho entregue:
+   - **Pagar Freelancer** → chama `complete_proposal` (SOL liberado)
+   - **Cancelar Job** → chama `cancel_job` (SOL devolvido)
 
-### View "I want to do" (Freelancer)
+### Visão "Quero fazer" (Freelancer)
 
 1. Conectar carteira (diferente da do cliente)
 2. **Navegar jobs abertos** — todos os jobs de outras carteiras
 3. **Enviar Proposta** — escrever mensagem → chama `offer_proposal`
-4. **Acompanhar propostas** — status: `pending` / `accepted` / `declined`
+4. **Acompanhar propostas** — status: `pendente` / `aceita` / `recusada`
 5. Quando aceito: aguardar o cliente liberar o pagamento
 
-### Funcionalidades do header
+### Funcionalidades do cabeçalho
 
 - **Saldo em tempo real** — atualiza a cada 5 segundos, fica vermelho se < 0.01 SOL
 - **Airdrop 2 SOL** — funciona em localnet e devnet (via RPC configurado no `.env.local`)
@@ -492,14 +494,14 @@ npm run gif -- video.webm demo.gif 12 800
 
 ## Erros comuns
 
-| Erro | Causa | Fix |
+| Erro | Causa | Solução |
 |---|---|---|
 | `Program ID mismatch` | `declare_id!` não bate com o keypair | Rodar `anchor keys sync` |
 | `IDL not found` | `app/lib/escrow_freelancer_offers.json` é placeholder | Rodar `anchor build` e depois `npm run copy-idl` em `/app` |
 | `.env.local not found` | Arquivo não existe (gitignored) | Criar manualmente — ver seção "Como rodar o frontend" |
 | `Insufficient funds` | Carteira sem SOL | Usar faucet — ver seção "Como conseguir SOL" |
 | `airdrop request failed` | Rate limit do devnet | Usar faucet web: faucet.solana.com |
-| `JobNotOpen` | Tentou propor/aceitar em job que não está Open | Verificar status do job no UI |
+| `JobNotOpen` | Tentou propor/aceitar em job que não está aberto | Verificar status do job no UI |
 | `NotJobClient` | Carteira errada assinando ação de cliente | Verificar qual carteira está conectada |
 | `Account not found` | Validador reiniciou, contas foram apagadas | Fazer redeploy: `anchor deploy` |
 | `CommonJs/ESM mismatch` | `"type"` errado no `app/package.json` | Garantir `"type": "module"` no `app/package.json` |
