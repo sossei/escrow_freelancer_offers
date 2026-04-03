@@ -1,5 +1,25 @@
 URL: https://escrow-freelancer-offers.vercel.app/
 PS: OffChain e Storage Local, este projeto é somente para testes nõa deve ser usado oficialmente em mainnet, sem melhorias offchain!
+
+---
+
+> **Como testar pelo link da Vercel**
+>
+> Acesse **https://escrow-freelancer-offers.vercel.app/** e use duas contas Phantom **no mesmo navegador** — uma para o papel de Cliente e outra para o Freelancer.
+>
+> **Por quê?** O banco de dados de jobs e propostas fica no `localStorage` do navegador. Se você abrir em abas diferentes do mesmo browser, os dois compartilham o mesmo storage e conseguem ver os dados um do outro. Em navegadores diferentes ou modo anônimo, o storage é isolado e o Freelancer não verá os jobs do Cliente.
+>
+> **Passo a passo:**
+> 1. Instale a extensão Phantom e crie duas contas (ou importe duas wallets)
+> 2. Abra o link acima
+> 3. Conecte a **Wallet A** → vá para "I need someone to do" e poste um job
+> 4. Troque para a **Wallet B** no Phantom (sem fechar o browser)
+> 5. Recarregue a página → vá para "I want to do" → o job aparece disponível
+> 6. Envie uma proposta com a Wallet B
+> 7. Troque de volta para a **Wallet A** → o job mostra a proposta pendente
+> 8. Aceite, pague ou cancele normalmente
+
+---
 # Escrow Freelancer Offers
 
 Programa Solana construído com Anchor que implementa um escrow descentralizado entre clientes e freelancers usando SOL nativo.
@@ -43,7 +63,7 @@ escrow-challenge/
     │   └── video-to-gif.mjs     ← Converte vídeo do Playwright em GIF
     ├── playwright.config.ts     ← Configuração do Playwright (vídeo ativado, 1280×720)
     └── lib/
-        ├── useEscrowProgram.ts  ← Hooks que chamam o programa on-chain
+        ├── useEscrowProgram.ts  ← Hooks: useEscrowProgram (chamadas on-chain) + useFeeEstimates (rent em tempo real)
         ├── mockDb.ts            ← Banco local em localStorage
         └── types.ts             ← Tipos TypeScript compartilhados
 ```
@@ -472,25 +492,50 @@ npm run gif -- video.webm demo.gif 12 800
 ### Visão "Preciso de alguém para fazer" (Cliente)
 
 1. Conectar carteira (Phantom)
-2. **Postar um Job** — título, descrição, valor em SOL → chama `create_offer`
-3. **Ver propostas** dos freelancers em cada job
-4. **Aceitar** uma proposta → chama `accept_proposal` (SOL bloqueado)
+2. **Postar um Job** — título, descrição, valor em SOL → exibe custo estimado antes de confirmar → chama `create_offer`
+3. **Ver propostas** dos freelancers em cada job — exibe custo estimado do `accept` antes de confirmar
+4. **Aceitar** uma proposta → chama `accept_proposal` (SOL bloqueado no vault)
 5. Após o trabalho entregue:
    - **Pagar Freelancer** → chama `complete_proposal` (SOL liberado)
    - **Cancelar Job** → chama `cancel_job` (SOL devolvido)
+6. Após cada transação: saldo atualiza imediatamente + banner mostra a taxa real paga
 
 ### Visão "Quero fazer" (Freelancer)
 
 1. Conectar carteira (diferente da do cliente)
 2. **Navegar jobs abertos** — todos os jobs de outras carteiras
-3. **Enviar Proposta** — escrever mensagem → chama `offer_proposal`
+3. **Enviar Proposta** — escrever mensagem → exibe custo estimado antes de confirmar → chama `offer_proposal`
 4. **Acompanhar propostas** — status: `pendente` / `aceita` / `recusada`
 5. Quando aceito: aguardar o cliente liberar o pagamento
+6. Após cada transação: saldo atualiza imediatamente + banner mostra a taxa real paga
 
 ### Funcionalidades do cabeçalho
 
-- **Saldo em tempo real** — atualiza a cada 5 segundos, fica vermelho se < 0.01 SOL
+- **Saldo em tempo real** — atualiza imediatamente após cada transação e a cada 5 segundos; fica vermelho se < 0.01 SOL
 - **Airdrop 2 SOL** — funciona em localnet e devnet (via RPC configurado no `.env.local`)
+
+---
+
+## Transparência de taxas
+
+Antes de cada ação o frontend exibe um breakdown com os custos estimados. Após a confirmação, um banner mostra a taxa real cobrada (lida direto de `transaction.meta.fee`).
+
+### Custo por ação
+
+| Ação | Quem paga | Taxa de rede | Rent | SOL bloqueado |
+|---|---|---|---|---|
+| **Postar job** | Cliente | ~0.000005 SOL | ~0.00570 SOL (JobOffer PDA) | — |
+| **Enviar proposta** | Freelancer | ~0.000005 SOL | ~0.00285 SOL (Proposal PDA) | — |
+| **Aceitar proposta** | Cliente | ~0.000005 SOL | — | valor do job |
+| **Pagar freelancer** | Cliente | ~0.000005 SOL | — (vault fechado, rent volta) | — |
+| **Cancelar job** | Cliente | ~0.000005 SOL | — (vault fechado, rent volta) | — |
+| **Recusar proposta** | Cliente | ~0.000005 SOL | — (Proposal fechada, rent volta) | — |
+
+> **Rent** é um depósito temporário para manter contas ativas on-chain. É recuperado quando a conta é fechada — não é um custo permanente.
+
+Os valores de rent são calculados dinamicamente via `connection.getMinimumBalanceForRentExemption()` com os tamanhos reais das contas:
+- `JobOffer`: 699 bytes
+- `JobProposal`: 378 bytes
 
 ---
 
