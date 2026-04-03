@@ -1,0 +1,740 @@
+{
+  "address": "2v5LKTZViJQ7hQNz7YoARjyaDQoRZKDzX1VtX8Evdfxx",
+  "metadata": {
+    "name": "escrow_freelancer_offers",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Escrow Freelancer Offers - Anchor program for SOL-based escrow between clients and freelancers"
+  },
+  "instructions": [
+    {
+      "name": "accept_proposal",
+      "docs": [
+        "Client accepts a freelancer's proposal.",
+        "Transfers `amount` lamports from client wallet to the vault PDA, locking them."
+      ],
+      "discriminator": [
+        33,
+        190,
+        130,
+        178,
+        27,
+        12,
+        168,
+        238
+      ],
+      "accounts": [
+        {
+          "name": "job_offer",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  106,
+                  111,
+                  98,
+                  95,
+                  111,
+                  102,
+                  102,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "job_offer.client",
+                "account": "JobOffer"
+              },
+              {
+                "kind": "account",
+                "path": "job_offer.job_id",
+                "account": "JobOffer"
+              }
+            ]
+          }
+        },
+        {
+          "name": "proposal",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  112,
+                  111,
+                  115,
+                  97,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "job_offer"
+              },
+              {
+                "kind": "account",
+                "path": "proposal.freelancer",
+                "account": "JobProposal"
+              }
+            ]
+          }
+        },
+        {
+          "name": "client",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "job_offer"
+          ]
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "job_offer"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "cancel_job",
+      "docs": [
+        "Client cancels the job.",
+        "If the job was accepted (SOL locked), returns the SOL to the client.",
+        "If it was still Open (no SOL locked), just marks it as cancelled."
+      ],
+      "discriminator": [
+        126,
+        241,
+        155,
+        241,
+        50,
+        236,
+        83,
+        118
+      ],
+      "accounts": [
+        {
+          "name": "job_offer",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  106,
+                  111,
+                  98,
+                  95,
+                  111,
+                  102,
+                  102,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "job_offer.client",
+                "account": "JobOffer"
+              },
+              {
+                "kind": "account",
+                "path": "job_offer.job_id",
+                "account": "JobOffer"
+              }
+            ]
+          }
+        },
+        {
+          "name": "client",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "job_offer"
+          ]
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "job_offer"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "complete_proposal",
+      "docs": [
+        "Client pays the freelancer — releases locked SOL from vault to freelancer wallet."
+      ],
+      "discriminator": [
+        3,
+        48,
+        26,
+        135,
+        144,
+        239,
+        5,
+        169
+      ],
+      "accounts": [
+        {
+          "name": "job_offer",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  106,
+                  111,
+                  98,
+                  95,
+                  111,
+                  102,
+                  102,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "job_offer.client",
+                "account": "JobOffer"
+              },
+              {
+                "kind": "account",
+                "path": "job_offer.job_id",
+                "account": "JobOffer"
+              }
+            ]
+          }
+        },
+        {
+          "name": "client",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "job_offer"
+          ]
+        },
+        {
+          "name": "freelancer",
+          "writable": true
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "job_offer"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "create_offer",
+      "docs": [
+        "Client creates a job offer on-chain.",
+        "`job_id` is a client-generated u64 (e.g. timestamp) used as a PDA seed",
+        "so the same client can create multiple offers."
+      ],
+      "discriminator": [
+        237,
+        233,
+        192,
+        168,
+        248,
+        7,
+        249,
+        241
+      ],
+      "accounts": [
+        {
+          "name": "job_offer",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  106,
+                  111,
+                  98,
+                  95,
+                  111,
+                  102,
+                  102,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "client"
+              },
+              {
+                "kind": "arg",
+                "path": "job_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "client",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "job_id",
+          "type": "u64"
+        },
+        {
+          "name": "title",
+          "type": "string"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "decline_proposal",
+      "docs": [
+        "Client declines a freelancer's proposal (job stays Open for other proposals)."
+      ],
+      "discriminator": [
+        74,
+        53,
+        183,
+        14,
+        18,
+        193,
+        254,
+        94
+      ],
+      "accounts": [
+        {
+          "name": "job_offer",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  106,
+                  111,
+                  98,
+                  95,
+                  111,
+                  102,
+                  102,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "job_offer.client",
+                "account": "JobOffer"
+              },
+              {
+                "kind": "account",
+                "path": "job_offer.job_id",
+                "account": "JobOffer"
+              }
+            ]
+          }
+        },
+        {
+          "name": "proposal",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  112,
+                  111,
+                  115,
+                  97,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "job_offer"
+              },
+              {
+                "kind": "account",
+                "path": "proposal.freelancer",
+                "account": "JobProposal"
+              }
+            ]
+          }
+        },
+        {
+          "name": "client",
+          "signer": true,
+          "relations": [
+            "job_offer"
+          ]
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "offer_proposal",
+      "docs": [
+        "Freelancer submits a proposal for an open job.",
+        "Only one proposal per (freelancer, job) pair allowed (enforced by PDA)."
+      ],
+      "discriminator": [
+        79,
+        204,
+        194,
+        142,
+        117,
+        65,
+        239,
+        77
+      ],
+      "accounts": [
+        {
+          "name": "job_offer"
+        },
+        {
+          "name": "proposal",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  114,
+                  111,
+                  112,
+                  111,
+                  115,
+                  97,
+                  108
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "job_offer"
+              },
+              {
+                "kind": "account",
+                "path": "freelancer"
+              }
+            ]
+          }
+        },
+        {
+          "name": "freelancer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "message",
+          "type": "string"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "JobOffer",
+      "discriminator": [
+        214,
+        34,
+        36,
+        177,
+        199,
+        167,
+        118,
+        37
+      ]
+    },
+    {
+      "name": "JobProposal",
+      "discriminator": [
+        125,
+        67,
+        182,
+        98,
+        129,
+        29,
+        34,
+        86
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "TitleTooLong",
+      "msg": "Job title must be 100 characters or less"
+    },
+    {
+      "code": 6001,
+      "name": "DescriptionTooLong",
+      "msg": "Job description must be 500 characters or less"
+    },
+    {
+      "code": 6002,
+      "name": "MessageTooLong",
+      "msg": "Proposal message must be 300 characters or less"
+    },
+    {
+      "code": 6003,
+      "name": "InvalidAmount",
+      "msg": "Amount must be greater than zero"
+    },
+    {
+      "code": 6004,
+      "name": "JobNotOpen",
+      "msg": "Job is not open for proposals"
+    },
+    {
+      "code": 6005,
+      "name": "JobNotAccepted",
+      "msg": "Job has not been accepted yet"
+    },
+    {
+      "code": 6006,
+      "name": "NotJobClient",
+      "msg": "Only the job client can perform this action"
+    },
+    {
+      "code": 6007,
+      "name": "ClientCannotPropose",
+      "msg": "Client cannot submit a proposal for their own job"
+    },
+    {
+      "code": 6008,
+      "name": "ProposalNotPending",
+      "msg": "Proposal is not in pending status"
+    },
+    {
+      "code": 6009,
+      "name": "ProposalMismatch",
+      "msg": "Proposal does not belong to this job"
+    },
+    {
+      "code": 6010,
+      "name": "WrongFreelancer",
+      "msg": "Freelancer does not match the accepted proposal"
+    },
+    {
+      "code": 6011,
+      "name": "CannotCancel",
+      "msg": "Job cannot be cancelled in its current status"
+    }
+  ],
+  "types": [
+    {
+      "name": "JobOffer",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "client",
+            "type": "pubkey"
+          },
+          {
+            "name": "job_id",
+            "type": "u64"
+          },
+          {
+            "name": "title",
+            "type": "string"
+          },
+          {
+            "name": "description",
+            "type": "string"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "JobStatus"
+              }
+            }
+          },
+          {
+            "name": "freelancer",
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "JobProposal",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "job_offer",
+            "type": "pubkey"
+          },
+          {
+            "name": "freelancer",
+            "type": "pubkey"
+          },
+          {
+            "name": "message",
+            "type": "string"
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "ProposalStatus"
+              }
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "JobStatus",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Open"
+          },
+          {
+            "name": "Accepted"
+          },
+          {
+            "name": "Completed"
+          },
+          {
+            "name": "Cancelled"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ProposalStatus",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Pending"
+          },
+          {
+            "name": "Accepted"
+          },
+          {
+            "name": "Declined"
+          }
+        ]
+      }
+    }
+  ]
+}
