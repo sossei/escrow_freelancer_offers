@@ -1,4 +1,5 @@
 URL: https://escrow-freelancer-offers.vercel.app/
+PS: OffChain e Storage Local, este projeto é somente para testes nõa deve ser usado oficialmente em mainnet, sem melhorias offchain!
 # Escrow Freelancer Offers
 
 Programa Solana construído com Anchor que implementa um escrow descentralizado entre clientes e freelancers usando SOL nativo.
