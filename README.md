@@ -2,6 +2,8 @@
 
 A Solana program built with Anchor that implements a decentralized escrow between clients and freelancers using native SOL.
 
+![demo](assets/demo.gif)
+
 ## What it does
 
 A **client** posts a job with a SOL budget. A **freelancer** submits a proposal. If the client accepts, the SOL is locked on-chain in a vault. After the work is done, the client either pays the freelancer (releases the SOL) or cancels (gets the SOL back).
